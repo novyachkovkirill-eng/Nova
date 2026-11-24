@@ -9,14 +9,19 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    # Full Telegram build with NDK/FFmpeg/TDLib takes a long time on hosted runners.
+    timeout-minutes: 180
 
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
         with:
-          submodules: recursive
-          fetch-depth: 0
+          submodules: false
+          fetch-depth: 1
+
+      - name: Fetch submodules (shallow)
+        run: git submodule update --init --recursive --depth=1
+
       - name: Apply NOVA changes
         run: python3 nova_apply.py
 
