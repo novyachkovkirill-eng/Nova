@@ -25,6 +25,28 @@ jobs:
       - name: Apply NOVA changes
         run: python3 nova_apply.py
 
+      - name: Inject Telegram API credentials from secrets
+        env:
+          TG_APP_ID: ${{ secrets.TG_APP_ID }}
+          TG_APP_HASH: ${{ secrets.TG_APP_HASH }}
+        run: |
+          python3 - <<'PY'
+          import os, re, sys
+          from pathlib import Path
+          app_id = os.environ.get("TG_APP_ID", "").strip()
+          app_hash = os.environ.get("TG_APP_HASH", "").strip()
+          if not app_id.isdigit() or not re.fullmatch(r"[0-9a-f]{32}", app_hash):
+              sys.exit("::error::Secrets TG_APP_ID (digits) and TG_APP_HASH (32 hex chars) must be set in repository secrets")
+          p = Path("TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java")
+          src = p.read_text(encoding="utf-8")
+          src, n1 = re.subn(r"(public static int APP_ID = )\d+;", lambda m: m.group(1) + app_id + ";", src)
+          src, n2 = re.subn(r'(public static String APP_HASH = )"[^"]*";', lambda m: m.group(1) + '"' + app_hash + '";', src)
+          if n1 != 1 or n2 != 1:
+              sys.exit(f"::error::Could not patch BuildVars (APP_ID matches={n1}, APP_HASH matches={n2})")
+          p.write_text(src, encoding="utf-8")
+          print("Telegram API credentials injected (values are masked in logs).")
+          PY
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
