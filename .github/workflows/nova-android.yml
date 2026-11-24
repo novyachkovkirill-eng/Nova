@@ -29,7 +29,11 @@ jobs:
 
       - name: Install Android components
         run: |
+          set +e
           yes | sdkmanager --licenses
+          LICENSE_STATUS=$?
+          set -e
+
           sdkmanager --install \
             "platform-tools" \
             "platforms;android-36" \
