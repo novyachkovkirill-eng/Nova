@@ -4098,6 +4098,25 @@ public class Theme {
         themes.add(themeInfo);
         themesDict.put("Night", themeInfo);
 
+        // NOVA brand themes (black / turquoise / lime / teal-green palette, see assets/nova_*.attheme).
+        themeInfo = new ThemeInfo();
+        themeInfo.name = "NOVA Light";
+        themeInfo.assetName = "nova_light.attheme";
+        themeInfo.previewBackgroundColor = 0xffF5FFFC;
+        themeInfo.previewInColor = 0xffFFFFFF;
+        themeInfo.previewOutColor = 0xffB9F26B;
+        themes.add(themeInfo);
+        themesDict.put("NOVA Light", themeInfo);
+
+        themeInfo = new ThemeInfo();
+        themeInfo.name = "NOVA Dark";
+        themeInfo.assetName = "nova_dark.attheme";
+        themeInfo.previewBackgroundColor = 0xff0A1A17;
+        themeInfo.previewInColor = 0xff12302B;
+        themeInfo.previewOutColor = 0xff2F6B1F;
+        themes.add(themeInfo);
+        themesDict.put("NOVA Dark", themeInfo);
+
         String themesString = themeConfig.getString("themes2", null);
 
         int remoteVersion = themeConfig.getInt("remote_version", 0);

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="NovaThemes">Темы NOVA</string>
+    <string name="NovaThemeCurrent">Текущая тема</string>
+    <string name="NovaThemeLight">NOVA Light</string>
+    <string name="NovaThemeDark">NOVA Dark</string>
+    <string name="NovaThemeSystem">Системная (как в Android)</string>
+    <string name="NovaThemeSystemInfo">Системная тема выбирает NOVA Light или NOVA Dark по настройке Android в момент выбора.</string>
+    <string name="NovaThemeCustom">Пользовательские темы и создание</string>
+    <string name="NovaThemeAllTelegram">Все темы Telegram</string>
+</resources>

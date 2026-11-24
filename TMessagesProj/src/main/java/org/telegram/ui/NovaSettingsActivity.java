@@ -1,19 +1,35 @@
 package org.telegram.ui;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.view.View;
 
-import org.telegram.messenger.R;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalFragment;
-import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.ArrayList;
 
-/** NOVA's first settings preview. The switches are intentionally demo-only. */
+/** NOVA settings. Theme section switches real Telegram themes; the demo switches stay demo-only. */
 public class NovaSettingsActivity extends UniversalFragment {
+    private static final String NOVA_LIGHT = "NOVA Light";
+    private static final String NOVA_DARK = "NOVA Dark";
+    private static final String PREF_SYSTEM_THEME = "nova_theme_system";
+
+    private static final int ID_NOVA_LIGHT = 10;
+    private static final int ID_NOVA_DARK = 11;
+    private static final int ID_NOVA_SYSTEM = 12;
+    private static final int ID_CUSTOM_THEMES = 13;
+    private static final int ID_ALL_THEMES = 14;
+    private static final int ID_CURRENT_THEME = 15;
+
     private boolean demoAnimations = true;
     private boolean demoExperimental = false;
 
@@ -41,8 +57,52 @@ public class NovaSettingsActivity extends UniversalFragment {
         return LocaleController.getString(R.string.NovaSettings);
     }
 
+    private static SharedPreferences prefs() {
+        return MessagesController.getGlobalMainSettings();
+    }
+
+    private static boolean isSystemThemeMode() {
+        return prefs().getBoolean(PREF_SYSTEM_THEME, false);
+    }
+
+    private static boolean systemIsNight() {
+        Configuration configuration = ApplicationLoader.applicationContext.getResources().getConfiguration();
+        return (configuration.uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+    }
+
+    private static String currentThemeName() {
+        Theme.ThemeInfo current = Theme.getCurrentTheme();
+        return current != null && current.name != null ? current.name : "";
+    }
+
+    /** Applies a NOVA theme as the day theme, the same way the Telegram theme list does. */
+    private void applyNovaTheme(String name, boolean system) {
+        Theme.ThemeInfo info = Theme.getTheme(name);
+        if (info == null) {
+            return;
+        }
+        prefs().edit().putBoolean(PREF_SYSTEM_THEME, system).apply();
+        Theme.applyTheme(info);
+        if (listView != null && listView.adapter != null) {
+            listView.adapter.update(true);
+        }
+    }
+
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
+        boolean system = isSystemThemeMode();
+        String current = currentThemeName();
+
+        items.add(UItem.asHeader(LocaleController.getString(R.string.NovaThemes)));
+        items.add(UItem.asButton(ID_CURRENT_THEME, LocaleController.getString(R.string.NovaThemeCurrent), current));
+        items.add(UItem.asRadio(ID_NOVA_LIGHT, LocaleController.getString(R.string.NovaThemeLight)).setChecked(!system && NOVA_LIGHT.equals(current)));
+        items.add(UItem.asRadio(ID_NOVA_DARK, LocaleController.getString(R.string.NovaThemeDark)).setChecked(!system && NOVA_DARK.equals(current)));
+        items.add(UItem.asRadio(ID_NOVA_SYSTEM, LocaleController.getString(R.string.NovaThemeSystem)).setChecked(system));
+        items.add(UItem.asShadow(LocaleController.getString(R.string.NovaThemeSystemInfo)));
+        items.add(UItem.asButton(ID_CUSTOM_THEMES, LocaleController.getString(R.string.NovaThemeCustom)));
+        items.add(UItem.asButton(ID_ALL_THEMES, LocaleController.getString(R.string.NovaThemeAllTelegram)));
+        items.add(UItem.asShadow(null));
+
         items.add(UItem.asHeader(LocaleController.getString(R.string.NovaPreview)));
         items.add(UItem.asCheck(1, LocaleController.getString(R.string.NovaDemoAnimations)).setChecked(demoAnimations));
         items.add(UItem.asCheck(2, LocaleController.getString(R.string.NovaDemoExperimental)).setChecked(demoExperimental));
@@ -53,14 +113,34 @@ public class NovaSettingsActivity extends UniversalFragment {
 
     @Override
     protected void onClick(UItem item, View view, int position, float x, float y) {
-        if (item.id == 1) {
-            demoAnimations = !demoAnimations;
-        } else if (item.id == 2) {
-            demoExperimental = !demoExperimental;
-        } else {
-            return;
+        switch (item.id) {
+            case ID_NOVA_LIGHT:
+                applyNovaTheme(NOVA_LIGHT, false);
+                break;
+            case ID_NOVA_DARK:
+                applyNovaTheme(NOVA_DARK, false);
+                break;
+            case ID_NOVA_SYSTEM:
+                applyNovaTheme(systemIsNight() ? NOVA_DARK : NOVA_LIGHT, true);
+                break;
+            case ID_CURRENT_THEME:
+            case ID_ALL_THEMES:
+                presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC));
+                break;
+            case ID_CUSTOM_THEMES:
+                presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_OTHER));
+                break;
+            case 1:
+                demoAnimations = !demoAnimations;
+                listView.adapter.update(true);
+                break;
+            case 2:
+                demoExperimental = !demoExperimental;
+                listView.adapter.update(true);
+                break;
+            default:
+                break;
         }
-        listView.adapter.update(true);
     }
 
     @Override
