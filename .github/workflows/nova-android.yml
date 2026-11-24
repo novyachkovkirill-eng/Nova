@@ -17,6 +17,10 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
+      - name: Apply NOVA changes
+        run: |
+          unzip -o NOVA_first_update.zip -d .
+          python3 nova_apply.py
 
       - name: Set up Java
         uses: actions/setup-java@v4
