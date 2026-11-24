@@ -354,6 +354,11 @@ public class MessagesController extends BaseController implements NotificationCe
     public boolean dialogsLoaded;
     private SparseIntArray nextDialogsCacheOffset = new SparseIntArray();
     private SparseBooleanArray loadingDialogs = new SparseBooleanArray();
+    // Latest network request token per folder: responses from older requests are ignored.
+    private final SparseIntArray dialogsRequestTokens = new SparseIntArray();
+    private int dialogsRequestTokenSeq;
+    // Latest resetDialogs request id: callbacks of older resets must not touch the current state.
+    private volatile int resetDialogsRequestId;
     private SparseBooleanArray dialogsEndReached = new SparseBooleanArray();
     private SparseBooleanArray serverDialogsEndReached = new SparseBooleanArray();
 
@@ -6614,6 +6619,8 @@ public class MessagesController extends BaseController implements NotificationCe
         dialogsLoaded = false;
         nextDialogsCacheOffset.clear();
         loadingDialogs.clear();
+        dialogsRequestTokens.clear();
+        resetDialogsRequestId++;
         dialogsEndReached.clear();
         serverDialogsEndReached.clear();
 
@@ -12583,16 +12590,31 @@ public class MessagesController extends BaseController implements NotificationCe
                     req.offset_peer = new TLRPC.TL_inputPeerEmpty();
                 }
             }
-            getConnectionsManager().sendRequest(req, (response, error) -> {
-                if (error == null) {
-                    TLRPC.messages_Dialogs dialogsRes = (TLRPC.messages_Dialogs) response;
-                    processLoadedDialogs(dialogsRes, null, null, folderId, 0, count, 0, false, false, false);
-                    if (onEmptyCallback != null && dialogsRes.dialogs.isEmpty()) {
-                        AndroidUtilities.runOnUIThread(onEmptyCallback);
-                    }
+            final int requestToken = ++dialogsRequestTokenSeq;
+            dialogsRequestTokens.put(folderId, requestToken);
+            getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                if (requestToken != dialogsRequestTokens.get(folderId)) {
+                    FileLog.d("loadDialogs ignoring stale response folderId=" + folderId);
+                    return;
                 }
-            });
+                if (error != null) {
+                    onDialogsLoadFailed(folderId, error);
+                    return;
+                }
+                TLRPC.messages_Dialogs dialogsRes = (TLRPC.messages_Dialogs) response;
+                processLoadedDialogs(dialogsRes, null, null, folderId, 0, count, 0, false, false, false);
+                if (onEmptyCallback != null && dialogsRes.dialogs.isEmpty()) {
+                    AndroidUtilities.runOnUIThread(onEmptyCallback);
+                }
+            }));
         }
+    }
+
+    private void onDialogsLoadFailed(int folderId, TLRPC.TL_error error) {
+        // Must run on the UI thread. Without this reset the folder stays "loading" for the whole session.
+        loadingDialogs.put(folderId, false);
+        FileLog.e("loadDialogs failed folderId=" + folderId + " code=" + (error != null ? error.code : 0) + " text=" + (error != null ? error.text : null));
+        getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
     }
 
     public void loadGlobalNotificationsSettings() {
@@ -12878,6 +12900,21 @@ public class MessagesController extends BaseController implements NotificationCe
         }
     }
 
+    private void failDialogsReset(int requestId, String step, TLRPC.TL_error error) {
+        AndroidUtilities.runOnUIThread(() -> {
+            if (requestId != resetDialogsRequestId) {
+                return;
+            }
+            // Invalidate the other in-flight request of this reset, then release the guard.
+            resetDialogsRequestId++;
+            resetDialogsPinned = null;
+            resetDialogsAll = null;
+            resetingDialogs = false;
+            FileLog.e("resetDialogs failed step=" + step + " code=" + (error != null ? error.code : 0) + " text=" + (error != null ? error.text : null));
+            getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
+        });
+    }
+
     private void resetDialogs(boolean query, int seq, int newPts, int date, int qts) {
         if (query) {
             if (resetingDialogs) {
@@ -12885,8 +12922,16 @@ public class MessagesController extends BaseController implements NotificationCe
             }
             getUserConfig().setPinnedDialogsLoaded(1, false);
             resetingDialogs = true;
+            final int requestId = ++resetDialogsRequestId;
+            // Drop leftovers of a previous reset so a half-finished run can't be completed with stale data.
+            resetDialogsPinned = null;
+            resetDialogsAll = null;
             TLRPC.TL_messages_getPinnedDialogs req = new TLRPC.TL_messages_getPinnedDialogs();
             getConnectionsManager().sendRequest(req, (response, error) -> {
+                if (requestId != resetDialogsRequestId) {
+                    FileLog.d("resetDialogs ignoring stale pinned response");
+                    return;
+                }
                 if (response != null) {
                     resetDialogsPinned = (TLRPC.TL_messages_peerDialogs) response;
                     for (int a = 0; a < resetDialogsPinned.dialogs.size(); a++) {
@@ -12894,6 +12939,8 @@ public class MessagesController extends BaseController implements NotificationCe
                         d.pinned = true;
                     }
                     resetDialogs(false, seq, newPts, date, qts);
+                } else {
+                    failDialogsReset(requestId, "getPinnedDialogs", error);
                 }
             });
             TLRPC.TL_messages_getDialogs req2 = new TLRPC.TL_messages_getDialogs();
@@ -12901,9 +12948,15 @@ public class MessagesController extends BaseController implements NotificationCe
             req2.exclude_pinned = true;
             req2.offset_peer = new TLRPC.TL_inputPeerEmpty();
             getConnectionsManager().sendRequest(req2, (response, error) -> {
+                if (requestId != resetDialogsRequestId) {
+                    FileLog.d("resetDialogs ignoring stale dialogs response");
+                    return;
+                }
                 if (error == null) {
                     resetDialogsAll = (TLRPC.messages_Dialogs) response;
                     resetDialogs(false, seq, newPts, date, qts);
+                } else {
+                    failDialogsReset(requestId, "getDialogs", error);
                 }
             });
         } else if (resetDialogsPinned != null && resetDialogsAll != null) {
