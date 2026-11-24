@@ -359,6 +359,8 @@ public class MessagesController extends BaseController implements NotificationCe
     private int dialogsRequestTokenSeq;
     // Latest resetDialogs request id: callbacks of older resets must not touch the current state.
     private volatile int resetDialogsRequestId;
+    // Startup self-heal runs once per session (reset in cleanup), see runStartupSelfHeal().
+    private boolean startupSelfHealDone;
     private SparseBooleanArray dialogsEndReached = new SparseBooleanArray();
     private SparseBooleanArray serverDialogsEndReached = new SparseBooleanArray();
 
@@ -6621,6 +6623,7 @@ public class MessagesController extends BaseController implements NotificationCe
         loadingDialogs.clear();
         dialogsRequestTokens.clear();
         resetDialogsRequestId++;
+        startupSelfHealDone = false;
         dialogsEndReached.clear();
         serverDialogsEndReached.clear();
 
@@ -6953,6 +6956,33 @@ public class MessagesController extends BaseController implements NotificationCe
             }
         });
     }
+    // Runs once per session after a successful difference sync (UI thread). It recovers two kinds of
+    // local state that can stay stale forever: our own profile (username/name), and a dialog list that
+    // was saved as "end reached" while the local cache is almost empty, so it never asks the server again.
+    private void runStartupSelfHeal() {
+        if (startupSelfHealDone) {
+            return;
+        }
+        startupSelfHealDone = true;
+        long selfId = getUserConfig().getClientUserId();
+        if (selfId == 0) {
+            return;
+        }
+        FileLog.d("selfheal: refreshing own profile");
+        reloadUser(selfId);
+        int localCount = getDialogs(0).size();
+        boolean endMarked = getUserConfig().getDialogLoadOffsets(0)[UserConfig.i_dialogsLoadOffsetId] == Integer.MAX_VALUE;
+        if (localCount < 10 && (endMarked || localCount == 0)) {
+            FileLog.d("selfheal: local dialogs=" + localCount + " endMarked=" + endMarked + ", reloading from server");
+            getUserConfig().setDialogsLoadOffset(0, 0, 0, 0, 0, 0, 0);
+            dialogsEndReached.put(0, false);
+            serverDialogsEndReached.put(0, false);
+            loadDialogs(0, 0, 100, false);
+        } else {
+            FileLog.d("selfheal: dialogs ok, local=" + localCount);
+        }
+    }
+
     public void putUsers(ArrayList<TLRPC.User> users, boolean fromCache) {
         if (users == null || users.isEmpty()) {
             return;
@@ -12602,6 +12632,7 @@ public class MessagesController extends BaseController implements NotificationCe
                     return;
                 }
                 TLRPC.messages_Dialogs dialogsRes = (TLRPC.messages_Dialogs) response;
+                FileLog.d("loadDialogs server response folderId=" + folderId + " dialogs=" + dialogsRes.dialogs.size());
                 processLoadedDialogs(dialogsRes, null, null, folderId, 0, count, 0, false, false, false);
                 if (onEmptyCallback != null && dialogsRes.dialogs.isEmpty()) {
                     AndroidUtilities.runOnUIThread(onEmptyCallback);
@@ -17188,6 +17219,7 @@ public class MessagesController extends BaseController implements NotificationCe
                                 for (int a = 0; a < 3; a++) {
                                     processUpdatesQueue(a, 1);
                                 }
+                                AndroidUtilities.runOnUIThread(this::runStartupSelfHeal);
                             }
                             getMessagesStorage().saveDiffParams(getMessagesStorage().getLastSeqValue(), getMessagesStorage().getLastPtsValue(), getMessagesStorage().getLastDateValue(), getMessagesStorage().getLastQtsValue());
                             if (BuildVars.LOGS_ENABLED) {
