@@ -1676,14 +1676,20 @@ public class Theme {
             if (isDark != UNKNOWN) {
                 return isDark == DARK;
             }
-            if ("Dark Blue".equals(name) || "Night".equals(name)) {
+            if ("Dark Blue".equals(name) || "Night".equals(name) || "NOVA Dark".equals(name)) {
                 isDark = DARK;
-            } else if ("Blue".equals(name) || "Arctic Blue".equals(name) || "Day".equals(name)) {
+            } else if ("Blue".equals(name) || "Arctic Blue".equals(name) || "Day".equals(name) || "NOVA Light".equals(name)) {
                 isDark = LIGHT;
             }
             if (isDark == UNKNOWN) {
+                if (pathToFile == null && assetName == null) {
+                    return false;
+                }
                 String[] wallpaperLink = new String[1];
-                SparseIntArray colors = getThemeFileValues(new File(pathToFile), null, wallpaperLink);
+                // Built-in asset themes have no pathToFile; new File(null) threw NPE here.
+                SparseIntArray colors = pathToFile != null
+                        ? getThemeFileValues(new File(pathToFile), null, wallpaperLink)
+                        : getThemeFileValues(null, assetName, wallpaperLink);
                 checkIsDark(colors, this);
             }
             return isDark == DARK;
