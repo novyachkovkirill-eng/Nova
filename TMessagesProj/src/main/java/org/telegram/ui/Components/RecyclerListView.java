@@ -63,6 +63,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.utils.glass.NovaUiStyle;
 import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.GenericProvider;
@@ -3815,8 +3816,10 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
     private final static Path sectionBackgroundPath = new Path();
     private final static float[] radii = new float[8];
     public static void drawBackgroundRect(Canvas canvas, RectF rect, float topRadius, float bottomRadius, float alpha, Theme.ResourcesProvider resourcesProvider) {
+        final boolean glass = NovaUiStyle.isGlass();
         sectionBackgroundPaint.setShadowLayer(0, 0, 0, 0);
-        sectionBackgroundPaint.setColor(multAlpha(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider), alpha));
+        // glass: a translucent card, so the content behind it shows through
+        sectionBackgroundPaint.setColor(multAlpha(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider), glass ? alpha * 0.62f : alpha));
         if (topRadius <= 0 && bottomRadius <= 0) {
             canvas.drawRect(rect, sectionBackgroundPaint);
         } else if (topRadius == bottomRadius) {
@@ -3828,7 +3831,19 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
             sectionBackgroundPath.addRoundRect(rect, radii, Path.Direction.CW);
             canvas.drawPath(sectionBackgroundPath, sectionBackgroundPaint);
         }
+        if (glass && topRadius > 0 && topRadius == bottomRadius) {
+            // light rim, the edge of the glass
+            final int rimAlpha = (int) (255 * 0.16f * alpha);
+            sectionBackgroundStrokePaint.setStyle(Paint.Style.STROKE);
+            sectionBackgroundStrokePaint.setStrokeWidth(AndroidUtilities.dp(1));
+            sectionBackgroundStrokePaint.setColor((rimAlpha << 24) | 0x00FFFFFF);
+            final float inset = AndroidUtilities.dp(0.5f);
+            rimRect.set(rect.left + inset, rect.top + inset, rect.right - inset, rect.bottom - inset);
+            canvas.drawRoundRect(rimRect, topRadius, topRadius, sectionBackgroundStrokePaint);
+            sectionBackgroundStrokePaint.setStyle(Paint.Style.FILL);
+        }
     }
+    private final static RectF rimRect = new RectF();
     public void drawBackgroundRect(Canvas canvas, RectF rect, float topRadius, float bottomRadius, float alpha) {
         drawBackgroundRect(canvas, rect, topRadius, bottomRadius, alpha, resourcesProvider);
     }

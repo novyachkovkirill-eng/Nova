@@ -20,6 +20,7 @@ import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalFragment;
 import org.telegram.utils.glass.NovaGlassSettings;
+import org.telegram.utils.glass.NovaUiStyle;
 
 import java.util.ArrayList;
 
@@ -36,6 +37,8 @@ public class NovaSettingsActivity extends UniversalFragment {
     private static final int ID_ALL_THEMES = 14;
     private static final int ID_CURRENT_THEME = 15;
     private static final int ID_GLASS_ENABLED = 20;
+    private static final int ID_STYLE_CLASSIC = 30;
+    private static final int ID_STYLE_GLASS = 31;
 
     private boolean demoAnimations = true;
     private boolean demoExperimental = false;
@@ -145,6 +148,12 @@ public class NovaSettingsActivity extends UniversalFragment {
         boolean system = isSystemThemeMode();
         String current = currentThemeName();
 
+        final boolean glassStyle = NovaUiStyle.isGlass();
+        items.add(UItem.asHeader(LocaleController.getString(R.string.NovaUiStyle)));
+        items.add(UItem.asRadio(ID_STYLE_CLASSIC, LocaleController.getString(R.string.NovaUiStyleClassic)).setChecked(!glassStyle));
+        items.add(UItem.asRadio(ID_STYLE_GLASS, LocaleController.getString(R.string.NovaUiStyleGlass)).setChecked(glassStyle));
+        items.add(UItem.asShadow(LocaleController.getString(R.string.NovaUiStyleInfo)));
+
         items.add(UItem.asHeader(LocaleController.getString(R.string.NovaThemes)));
         items.add(UItem.asButton(ID_CURRENT_THEME, LocaleController.getString(R.string.NovaThemeCurrent), current));
         items.add(UItem.asRadio(ID_NOVA_LIGHT, LocaleController.getString(R.string.NovaThemeLight)).setChecked(!system && NOVA_LIGHT.equals(current)));
@@ -193,6 +202,12 @@ public class NovaSettingsActivity extends UniversalFragment {
                 NovaGlassSettings.setEnabled(!NovaGlassSettings.isEnabled());
                 updateGlassViews();
                 listView.adapter.update(true);
+                break;
+            case ID_STYLE_CLASSIC:
+            case ID_STYLE_GLASS:
+                NovaUiStyle.set(item.id == ID_STYLE_GLASS ? NovaUiStyle.GLASS : NovaUiStyle.CLASSIC);
+                listView.adapter.update(true);
+                listView.invalidate();
                 break;
             case 1:
                 demoAnimations = !demoAnimations;

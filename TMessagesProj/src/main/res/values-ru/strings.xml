@@ -272,6 +272,10 @@
     <string name="NovaThemeCustom">Пользовательские темы и создание</string>
     <string name="NovaThemeAllTelegram">Все темы Telegram</string>
     <string name="NovaGlass">Жидкое стекло</string>
+    <string name="NovaUiStyle">Стиль интерфейса</string>
+    <string name="NovaUiStyleClassic">Классический</string>
+    <string name="NovaUiStyleGlass">Стеклянный</string>
+    <string name="NovaUiStyleInfo">Стеклянный стиль делает карточки разделов в настройках и списках полупрозрачными со светлым краем. Классический оставляет вид Telegram. Нижняя панель вкладок одинаковая в обоих стилях.</string>
     <string name="NovaGlassEnabled">Эффект жидкого стекла</string>
     <string name="NovaGlassIntensity">Сила эффекта</string>
     <string name="NovaGlassPreview">Превью</string>

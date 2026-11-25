@@ -11688,6 +11688,10 @@
     <string name="NovaThemeCustom">Custom themes and creation</string>
     <string name="NovaThemeAllTelegram">All Telegram themes</string>
     <string name="NovaGlass">Liquid glass</string>
+    <string name="NovaUiStyle">Interface style</string>
+    <string name="NovaUiStyleClassic">Classic</string>
+    <string name="NovaUiStyleGlass">Glass</string>
+    <string name="NovaUiStyleInfo">Glass makes section cards in settings and lists translucent with a light edge. Classic keeps the Telegram look. The bottom tab bar stays the same in both.</string>
     <string name="NovaGlassEnabled">Liquid glass effect</string>
     <string name="NovaGlassIntensity">Glass strength</string>
     <string name="NovaGlassPreview">Preview</string>
