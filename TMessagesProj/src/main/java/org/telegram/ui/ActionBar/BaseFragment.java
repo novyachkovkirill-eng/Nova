@@ -1513,9 +1513,20 @@ public abstract class BaseFragment {
      * coordinates of the fragment's view, null for none. Does nothing without the simple glass.
      */
     public void setParentGlass(@Nullable RectF position, @Nullable Runnable onCaptured) {
+        parentGlassCaptured = onCaptured;
         if (simpleGlass != null) {
             glassEngine.setExternalCapturePosition(position);
             simpleGlass.setOnCaptured(onCaptured);
+        }
+    }
+
+    /** The parent glass callback, kept also for screens without the simple glass (e.g. the chats, which capture with their own noise suppressor). */
+    private @Nullable Runnable parentGlassCaptured;
+
+    /** Tells the parent glass that this screen's capture was updated, so it draws it again. */
+    protected void notifyParentGlassCaptured() {
+        if (parentGlassCaptured != null) {
+            parentGlassCaptured.run();
         }
     }
 

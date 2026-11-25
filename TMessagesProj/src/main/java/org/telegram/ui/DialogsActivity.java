@@ -13871,7 +13871,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
             scrollableViewNoiseSuppressor.setupRenderNodes(iBlur3Positions, hasBottomBlur ? 2 : 1);
         }
-        scrollableViewNoiseSuppressor.invalidateResultRenderNodes(iBlur3Capture, fragmentView.getMeasuredWidth(), fragmentView.getMeasuredHeight());
+        // The tabs draw this capture only when told it changed: their hash does not cover the page content.
+        if (scrollableViewNoiseSuppressor.invalidateResultRenderNodes(iBlur3Capture, fragmentView.getMeasuredWidth(), fragmentView.getMeasuredHeight())) {
+            notifyParentGlassCaptured();
+        }
     }
 
     private int calculateListViewPaddingBottom() {
