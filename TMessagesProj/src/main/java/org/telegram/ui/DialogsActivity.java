@@ -13836,7 +13836,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             return;
         }
 
-        if (BitwiseUtils.hasFlag(flags, GlassEngine.FLAG_INVALIDATED_POSITIONS)) {
+        // Set up on every update, not only when glass positions change: without the render nodes the capture is empty,
+        // and the positions of this screen's own glass may never change while the chats are a tab.
+        {
             final int additionalList = dp(48);
             final int mainTabBottom = fragmentView.getMeasuredHeight() - navigationBarHeight - dp(DialogsActivity.MAIN_TABS_MARGIN);
             final int mainTabTop = mainTabBottom - dp(DialogsActivity.MAIN_TABS_HEIGHT);
