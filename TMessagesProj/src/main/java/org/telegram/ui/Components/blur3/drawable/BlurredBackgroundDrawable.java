@@ -33,6 +33,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.blur3.Blur3HashImpl;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.LiquidGlassEffect;
+import org.telegram.utils.glass.NovaGlassSettings;
 import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProvider;
 import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProviderThemed;
 import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundProvider;
@@ -1281,7 +1282,7 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
                     body.left - b.left, body.top - b.top,
                     boundProps.shaderRadii[0], boundProps.shaderRadii[2], boundProps.shaderRadii[4], boundProps.shaderRadii[6],
                     thickness,
-                    boundProps.liquidIntensity,
+                    boundProps.liquidIntensity * NovaGlassSettings.intensityScale(),
                     boundProps.liquidIndex,
                     backgroundColor,
                     originX - sL, originY - sT,

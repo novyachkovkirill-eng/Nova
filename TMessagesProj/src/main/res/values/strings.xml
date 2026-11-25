@@ -11687,4 +11687,9 @@
     <string name="NovaThemeSystemInfo">System mode picks NOVA Light or NOVA Dark based on the Android setting when you select it.</string>
     <string name="NovaThemeCustom">Custom themes and creation</string>
     <string name="NovaThemeAllTelegram">All Telegram themes</string>
+    <string name="NovaGlass">Liquid glass</string>
+    <string name="NovaGlassEnabled">Liquid glass effect</string>
+    <string name="NovaGlassIntensity">Glass strength</string>
+    <string name="NovaGlassPreview">Preview</string>
+    <string name="NovaGlassInfo">Glass applies to the bottom tab bar and floating elements. Needs Android 13 or newer; on older systems the bar stays frosted. Lower strength is softer, higher is stronger refraction. The preview is approximate, the tab bar shows the real effect.</string>
 </resources>

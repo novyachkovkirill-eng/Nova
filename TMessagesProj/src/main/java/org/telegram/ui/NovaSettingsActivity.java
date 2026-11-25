@@ -4,16 +4,22 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.SeekBarView;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalFragment;
+import org.telegram.utils.glass.NovaGlassSettings;
 
 import java.util.ArrayList;
 
@@ -29,9 +35,16 @@ public class NovaSettingsActivity extends UniversalFragment {
     private static final int ID_CUSTOM_THEMES = 13;
     private static final int ID_ALL_THEMES = 14;
     private static final int ID_CURRENT_THEME = 15;
+    private static final int ID_GLASS_ENABLED = 20;
 
     private boolean demoAnimations = true;
     private boolean demoExperimental = false;
+
+    // Views are created once and reused, so the list can be refilled without losing the slider position.
+    private NovaGlassPreviewView glassPreview;
+    private SeekBarView glassSeekBar;
+    private TextView glassIntensityText;
+    private LinearLayout glassSliderView;
 
     @Override
     protected boolean useSimpleActionBar() {
@@ -41,6 +54,7 @@ public class NovaSettingsActivity extends UniversalFragment {
     @Override
     public View createView(Context context) {
         setHasOwnBackground(true);
+        createGlassViews(context);
         fragmentView = super.createView(context);
         listView.setSections();
         listView.setSectionsDrawBackground(true);
@@ -88,6 +102,44 @@ public class NovaSettingsActivity extends UniversalFragment {
         }
     }
 
+    private void createGlassViews(Context context) {
+        glassPreview = new NovaGlassPreviewView(context);
+
+        glassIntensityText = new TextView(context);
+        glassIntensityText.setTextSize(16);
+        glassIntensityText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        glassIntensityText.setPadding(AndroidUtilities.dp(21), AndroidUtilities.dp(10), AndroidUtilities.dp(21), 0);
+
+        glassSeekBar = new SeekBarView(context);
+        glassSeekBar.setReportChanges(true);
+        glassSeekBar.setProgress(NovaGlassSettings.getIntensity() / (float) NovaGlassSettings.MAX_INTENSITY, false);
+        glassSeekBar.setDelegate(new SeekBarView.SeekBarViewDelegate() {
+            @Override
+            public void onSeekBarDrag(boolean stop, float progress) {
+                NovaGlassSettings.setIntensity(Math.round(progress * NovaGlassSettings.MAX_INTENSITY));
+                updateGlassViews();
+            }
+        });
+
+        glassSliderView = new LinearLayout(context);
+        glassSliderView.setOrientation(LinearLayout.VERTICAL);
+        glassSliderView.addView(glassIntensityText, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        glassSliderView.addView(glassSeekBar, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, AndroidUtilities.dp(40)));
+
+        updateGlassViews();
+    }
+
+    /** Keeps the slider label and the preview in sync with the stored glass settings. */
+    private void updateGlassViews() {
+        final int value = NovaGlassSettings.getIntensity();
+        if (glassIntensityText != null) {
+            glassIntensityText.setText(LocaleController.getString(R.string.NovaGlassIntensity) + ": " + value + "%");
+        }
+        if (glassPreview != null) {
+            glassPreview.setState(NovaGlassSettings.isEnabled(), value);
+        }
+    }
+
     @Override
     protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         boolean system = isSystemThemeMode();
@@ -102,6 +154,13 @@ public class NovaSettingsActivity extends UniversalFragment {
         items.add(UItem.asButton(ID_CUSTOM_THEMES, LocaleController.getString(R.string.NovaThemeCustom)));
         items.add(UItem.asButton(ID_ALL_THEMES, LocaleController.getString(R.string.NovaThemeAllTelegram)));
         items.add(UItem.asShadow(null));
+
+        items.add(UItem.asHeader(LocaleController.getString(R.string.NovaGlass)));
+        items.add(UItem.asCheck(ID_GLASS_ENABLED, LocaleController.getString(R.string.NovaGlassEnabled)).setChecked(NovaGlassSettings.isEnabled()));
+        items.add(UItem.asCustom(glassSliderView, 72));
+        items.add(UItem.asHeader(LocaleController.getString(R.string.NovaGlassPreview)));
+        items.add(UItem.asCustom(glassPreview, 150));
+        items.add(UItem.asShadow(LocaleController.getString(R.string.NovaGlassInfo)));
 
         items.add(UItem.asHeader(LocaleController.getString(R.string.NovaPreview)));
         items.add(UItem.asCheck(1, LocaleController.getString(R.string.NovaDemoAnimations)).setChecked(demoAnimations));
@@ -129,6 +188,11 @@ public class NovaSettingsActivity extends UniversalFragment {
                 break;
             case ID_CUSTOM_THEMES:
                 presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_OTHER));
+                break;
+            case ID_GLASS_ENABLED:
+                NovaGlassSettings.setEnabled(!NovaGlassSettings.isEnabled());
+                updateGlassViews();
+                listView.adapter.update(true);
                 break;
             case 1:
                 demoAnimations = !demoAnimations;

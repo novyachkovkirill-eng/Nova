@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
 import org.telegram.messenger.LiteMode;
+import org.telegram.utils.glass.NovaGlassSettings;
 import org.telegram.messenger.postdrawcompat.OnPostDrawListener;
 import org.telegram.messenger.postdrawcompat.ViewOnPostDrawListener;
 import org.telegram.ui.ActionBar.Theme;
@@ -603,7 +604,8 @@ public class GlassEngine {
 
     private static void checkGlassSettings() {
         final boolean isBlurEnabled = LiteMode.isEnabled(LiteMode.FLAG_CHAT_BLUR);
-        final boolean isLiquidGlassEnabled = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS);
+        // Liquid glass is decided by the NOVA setting (default on), not by the LiteMode liquid glass flag.
+        final boolean isLiquidGlassEnabled = NovaGlassSettings.isEnabled();
 
         final boolean glassSettingsInvalidated = glassSettings == null
             || glassSettings.isBlurEnabled != isBlurEnabled

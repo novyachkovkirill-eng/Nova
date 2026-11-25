@@ -271,4 +271,9 @@
     <string name="NovaThemeSystemInfo">Системная тема выбирает NOVA Light или NOVA Dark по настройке Android в момент выбора.</string>
     <string name="NovaThemeCustom">Пользовательские темы и создание</string>
     <string name="NovaThemeAllTelegram">Все темы Telegram</string>
+    <string name="NovaGlass">Жидкое стекло</string>
+    <string name="NovaGlassEnabled">Эффект жидкого стекла</string>
+    <string name="NovaGlassIntensity">Сила эффекта</string>
+    <string name="NovaGlassPreview">Превью</string>
+    <string name="NovaGlassInfo">Стекло применяется к нижней панели вкладок и плавающим элементам. Нужен Android 13 или новее; на старых системах панель остаётся матовой. Меньшая сила — мягче, большая — сильнее преломление. Превью приблизительное, точный вид — на самой панели вкладок.</string>
 </resources>
