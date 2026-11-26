@@ -92,6 +92,7 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_account;
 import org.telegram.tgnet.tl.TL_iv;
 import org.telegram.tgnet.tl.TL_stories;
+import org.telegram.utils.glass.NovaUiStyle;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeBind;
 import org.telegram.ui.Adapters.DialogsAdapter;
@@ -503,6 +504,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private boolean openBot;
     private final ButtonBounce openButtonBounce = new ButtonBounce(this);
     private final Paint openButtonBackgroundPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF novaCardRect = new RectF();
+    private final Paint novaCardPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint novaCardStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF openButtonRect = new RectF();
     private Text openButtonText;
     public void setOpenBotButton(boolean show) {
@@ -3842,6 +3846,22 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private GradientDrawable archiveFadeGradientDrawable;
     private int archiveFadeGradientDrawableColor;
 
+    /** NOVA glass style: the row sits on a translucent rounded card, inset from the screen edges. Layout is not changed. */
+    private void drawNovaGlassCard(Canvas canvas) {
+        final float inset = dp(8);
+        final float vertical = dp(2);
+        final float radius = dp(14);
+        novaCardRect.set(inset, vertical, getMeasuredWidth() - inset, getMeasuredHeight() - vertical);
+        novaCardPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+        novaCardPaint.setAlpha(158);
+        canvas.drawRoundRect(novaCardRect, radius, radius, novaCardPaint);
+        novaCardStrokePaint.setStyle(Paint.Style.STROKE);
+        novaCardStrokePaint.setStrokeWidth(dp(1));
+        novaCardStrokePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+        novaCardStrokePaint.setAlpha(36);
+        canvas.drawRoundRect(novaCardRect, radius, radius, novaCardStrokePaint);
+    }
+
     @SuppressLint("DrawAllocation")
     @Override
     protected void onDraw(Canvas canvas) {
@@ -3850,6 +3870,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         }
         if (!visibleOnScreen) {
             return;
+        }
+        if (NovaUiStyle.isGlass() && !drawArchive) {
+            drawNovaGlassCard(canvas);
         }
 
         boolean needInvalidate = false;
