@@ -20,6 +20,7 @@ import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalFragment;
 import org.telegram.utils.glass.NovaGlassSettings;
+import org.telegram.utils.ghost.NovaGhostMode;
 import org.telegram.utils.glass.NovaUiStyle;
 
 import java.util.ArrayList;
@@ -39,6 +40,7 @@ public class NovaSettingsActivity extends UniversalFragment {
     private static final int ID_GLASS_ENABLED = 20;
     private static final int ID_STYLE_CLASSIC = 30;
     private static final int ID_STYLE_GLASS = 31;
+    private static final int ID_GHOST = 40;
 
     private boolean demoAnimations = true;
     private boolean demoExperimental = false;
@@ -171,6 +173,10 @@ public class NovaSettingsActivity extends UniversalFragment {
         items.add(UItem.asCustom(glassPreview, 150));
         items.add(UItem.asShadow(LocaleController.getString(R.string.NovaGlassInfo)));
 
+        items.add(UItem.asHeader(LocaleController.getString(R.string.NovaGhost)));
+        items.add(UItem.asCheck(ID_GHOST, LocaleController.getString(R.string.NovaGhostEnabled)).setChecked(NovaGhostMode.isEnabled()));
+        items.add(UItem.asShadow(LocaleController.getString(R.string.NovaGhostInfo)));
+
         items.add(UItem.asHeader(LocaleController.getString(R.string.NovaPreview)));
         items.add(UItem.asCheck(1, LocaleController.getString(R.string.NovaDemoAnimations)).setChecked(demoAnimations));
         items.add(UItem.asCheck(2, LocaleController.getString(R.string.NovaDemoExperimental)).setChecked(demoExperimental));
@@ -201,6 +207,10 @@ public class NovaSettingsActivity extends UniversalFragment {
             case ID_GLASS_ENABLED:
                 NovaGlassSettings.setEnabled(!NovaGlassSettings.isEnabled());
                 updateGlassViews();
+                listView.adapter.update(true);
+                break;
+            case ID_GHOST:
+                NovaGhostMode.setEnabled(!NovaGhostMode.isEnabled());
                 listView.adapter.update(true);
                 break;
             case ID_STYLE_CLASSIC:

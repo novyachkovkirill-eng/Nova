@@ -11696,4 +11696,7 @@
     <string name="NovaGlassIntensity">Glass strength</string>
     <string name="NovaGlassPreview">Preview</string>
     <string name="NovaGlassInfo">Glass applies to the bottom tab bar and floating elements. Needs Android 13 or newer; on older systems the bar stays frosted. Lower strength is softer, higher is stronger refraction. The preview is approximate, the tab bar shows the real effect.</string>
+    <string name="NovaGhost">Ghost mode</string>
+    <string name="NovaGhostEnabled">Ghost mode on</string>
+    <string name="NovaGhostInfo">With ghost mode on, others do not see that you read their messages (no read receipts) and do not see you online. You still see their status and messages as usual. Read marks for voice and video messages are not changed yet.</string>
 </resources>
