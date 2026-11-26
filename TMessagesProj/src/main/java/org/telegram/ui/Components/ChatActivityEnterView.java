@@ -113,6 +113,7 @@ import androidx.dynamicanimation.animation.DynamicAnimation;
 import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
+import org.telegram.utils.glass.NovaUiStyle;
 import org.telegram.ui.recyclerview.ChatListItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
@@ -4775,9 +4776,47 @@ public class ChatActivityEnterView extends FrameLayout implements
     Paint backgroundPaint = new Paint();
     private float composeShadowAlpha = 1f;
     private Rect blurBounds = new Rect();
+    private final RectF novaCapsuleRect = new RectF();
+    private final Path novaCapsulePath = new Path();
+    private final Paint novaCapsuleFill = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint novaCapsuleStroke = new Paint(Paint.ANTI_ALIAS_FLAG);
     @Override
     protected void onDraw(Canvas canvas) {
         drawBackground(canvas, true);
+    }
+
+    /** NOVA glass style: the composer is a rounded floating capsule over the blurred chat. Same bounds as the plain panel. */
+    private void drawNovaGlassCapsule(Canvas canvas, int bottom) {
+        final float inset = dp(8);
+        novaCapsuleRect.set(inset, bottom + dp(4), getWidth() - inset, getHeight() - dp(6));
+        if (novaCapsuleRect.height() <= 0) {
+            return;
+        }
+        final float radius = Math.min(dp(22), novaCapsuleRect.height() / 2f);
+        novaCapsulePath.rewind();
+        novaCapsulePath.addRoundRect(novaCapsuleRect, radius, radius, Path.Direction.CW);
+
+        canvas.save();
+        canvas.clipPath(novaCapsulePath);
+        final int panel = getThemedColor(Theme.key_chat_messagePanelBackground);
+        if (SharedConfig.chatBlurEnabled() && sizeNotifierLayout != null) {
+            blurBounds.set((int) novaCapsuleRect.left, (int) novaCapsuleRect.top, (int) novaCapsuleRect.right, (int) novaCapsuleRect.bottom);
+            backgroundPaint.setColor(panel);
+            sizeNotifierLayout.drawBlurRect(canvas, getTop(), blurBounds, backgroundPaint, false);
+            novaCapsuleFill.setColor(panel);
+            novaCapsuleFill.setAlpha(170);
+        } else {
+            novaCapsuleFill.setColor(panel);
+            novaCapsuleFill.setAlpha(235);
+        }
+        canvas.drawPath(novaCapsulePath, novaCapsuleFill);
+        canvas.restore();
+
+        novaCapsuleStroke.setStyle(Paint.Style.STROKE);
+        novaCapsuleStroke.setStrokeWidth(dp(1));
+        novaCapsuleStroke.setColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
+        novaCapsuleStroke.setAlpha(40);
+        canvas.drawPath(novaCapsulePath, novaCapsuleStroke);
     }
 
     public void drawBackground(Canvas canvas, boolean withComposeShadowDrawable) {
@@ -4797,6 +4836,10 @@ public class ChatActivityEnterView extends FrameLayout implements
             Theme.chat_composeShadowDrawable.draw(canvas);
         }
 
+        if (NovaUiStyle.isGlass() && allowBlur) {
+            drawNovaGlassCapsule(canvas, bottom);
+            return;
+        }
         if (allowBlur) {
             backgroundPaint.setColor(getThemedColor(Theme.key_chat_messagePanelBackground));
             if (SharedConfig.chatBlurEnabled() && sizeNotifierLayout != null) {
